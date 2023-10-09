@@ -1,0 +1,1678 @@
+<!DOCTYPE html>
+<html dir="ltr" lang="en-US">
+
+<head>
+    <meta charset="UTF-8" />
+    <script>
+        if (navigator.userAgent.match(/MSIE|Internet Explorer/i) || navigator.userAgent.match(
+            /Trident\/7\..*?rv:11/i)) {
+            var href = document.location.href;
+            if (!href.match(/[?&]nowprocket/)) {
+                if (href.indexOf("?") == -1) {
+                    if (href.indexOf("#") == -1) {
+                        document.location.href = href + "?nowprocket=1"
+                    } else {
+                        document.location.href = href.replace("#", "?nowprocket=1#")
+                    }
+                } else {
+                    if (href.indexOf("#") == -1) {
+                        document.location.href = href + "&nowprocket=1"
+                    } else {
+                        document.location.href = href.replace("#", "&nowprocket=1#")
+                    }
+                }
+            }
+        }
+    </script>
+    <script>
+        class RocketLazyLoadScripts {
+            constructor() {
+                this.v = "1.2.3", this.triggerEvents = ["keydown", "mousedown", "mousemove", "touchmove",
+                        "touchstart", "touchend", "wheel"
+                    ], this.userEventHandler = this._triggerListener.bind(this), this.touchStartHandler = this
+                    ._onTouchStart.bind(this), this.touchMoveHandler = this._onTouchMove.bind(this), this
+                    .touchEndHandler = this._onTouchEnd.bind(this), this.clickHandler = this._onClick.bind(this),
+                    this.interceptedClicks = [], window.addEventListener("pageshow", t => {
+                        this.persisted = t.persisted
+                    }), window.addEventListener("DOMContentLoaded", () => {
+                        this._preconnect3rdParties()
+                    }), this.delayedScripts = {
+                        normal: [],
+                        async: [],
+                        defer: []
+                    }, this.trash = [], this.allJQueries = []
+            }
+            _addUserInteractionListener(t) {
+                if (document.hidden) {
+                    t._triggerListener();
+                    return
+                }
+                this.triggerEvents.forEach(e => window.addEventListener(e, t.userEventHandler, {
+                    passive: !0
+                })), window.addEventListener("touchstart", t.touchStartHandler, {
+                    passive: !0
+                }), window.addEventListener("mousedown", t.touchStartHandler), document.addEventListener(
+                    "visibilitychange", t.userEventHandler)
+            }
+            _removeUserInteractionListener() {
+                this.triggerEvents.forEach(t => window.removeEventListener(t, this.userEventHandler, {
+                    passive: !0
+                })), document.removeEventListener("visibilitychange", this.userEventHandler)
+            }
+            _onTouchStart(t) {
+                "HTML" !== t.target.tagName && (window.addEventListener("touchend", this.touchEndHandler), window
+                    .addEventListener("mouseup", this.touchEndHandler), window.addEventListener("touchmove",
+                        this.touchMoveHandler, {
+                            passive: !0
+                        }), window.addEventListener("mousemove", this.touchMoveHandler), t.target
+                    .addEventListener("click", this.clickHandler), this._renameDOMAttribute(t.target, "onclick",
+                        "rocket-onclick"), this._pendingClickStarted())
+            }
+            _onTouchMove(t) {
+                window.removeEventListener("touchend", this.touchEndHandler), window.removeEventListener("mouseup",
+                        this.touchEndHandler), window.removeEventListener("touchmove", this.touchMoveHandler, {
+                        passive: !0
+                    }), window.removeEventListener("mousemove", this.touchMoveHandler), t.target
+                    .removeEventListener("click", this.clickHandler), this._renameDOMAttribute(t.target,
+                        "rocket-onclick", "onclick"), this._pendingClickFinished()
+            }
+            _onTouchEnd(t) {
+                window.removeEventListener("touchend", this.touchEndHandler), window.removeEventListener("mouseup",
+                    this.touchEndHandler), window.removeEventListener("touchmove", this.touchMoveHandler, {
+                    passive: !0
+                }), window.removeEventListener("mousemove", this.touchMoveHandler)
+            }
+            _onClick(t) {
+                t.target.removeEventListener("click", this.clickHandler), this._renameDOMAttribute(t.target,
+                        "rocket-onclick", "onclick"), this.interceptedClicks.push(t), t.preventDefault(), t
+                    .stopPropagation(), t.stopImmediatePropagation(), this._pendingClickFinished()
+            }
+            _replayClicks() {
+                window.removeEventListener("touchstart", this.touchStartHandler, {
+                        passive: !0
+                    }), window.removeEventListener("mousedown", this.touchStartHandler), this.interceptedClicks
+                    .forEach(t => {
+                        t.target.dispatchEvent(new MouseEvent("click", {
+                            view: t.view,
+                            bubbles: !0,
+                            cancelable: !0
+                        }))
+                    })
+            }
+            _waitForPendingClicks() {
+                return new Promise(t => {
+                    this._isClickPending ? this._pendingClickFinished = t : t()
+                })
+            }
+            _pendingClickStarted() {
+                this._isClickPending = !0
+            }
+            _pendingClickFinished() {
+                this._isClickPending = !1
+            }
+            _renameDOMAttribute(t, e, r) {
+                t.hasAttribute && t.hasAttribute(e) && (event.target.setAttribute(r, event.target.getAttribute(e)),
+                    event.target.removeAttribute(e))
+            }
+            _triggerListener() {
+                this._removeUserInteractionListener(this), "loading" === document.readyState ? document
+                    .addEventListener("DOMContentLoaded", this._loadEverythingNow.bind(this)) : this
+                    ._loadEverythingNow()
+            }
+            _preconnect3rdParties() {
+                let t = [];
+                document.querySelectorAll("script[type=rocketlazyloadscript]").forEach(e => {
+                        if (e.hasAttribute("src")) {
+                            let r = new URL(e.src).origin;
+                            r !== location.origin && t.push({
+                                src: r,
+                                crossOrigin: e.crossOrigin || "module" === e.getAttribute(
+                                    "data-rocket-type")
+                            })
+                        }
+                    }), t = [...new Map(t.map(t => [JSON.stringify(t), t])).values()], this
+                    ._batchInjectResourceHints(t, "preconnect")
+            }
+            async _loadEverythingNow() {
+                this.lastBreath = Date.now(), this._delayEventListeners(this), this._delayJQueryReady(this), this
+                    ._handleDocumentWrite(), this._registerAllDelayedScripts(), this._preloadAllScripts(),
+                    await this._loadScriptsFromList(this.delayedScripts.normal), await this._loadScriptsFromList(
+                        this.delayedScripts.defer), await this._loadScriptsFromList(this.delayedScripts.async);
+                try {
+                    await this._triggerDOMContentLoaded(), await this._triggerWindowLoad()
+                } catch (t) {
+                    console.error(t)
+                }
+                window.dispatchEvent(new Event("rocket-allScriptsLoaded")), this._waitForPendingClicks().then(
+            () => {
+                    this._replayClicks()
+                }), this._emptyTrash()
+            }
+            _registerAllDelayedScripts() {
+                document.querySelectorAll("script[type=rocketlazyloadscript]").forEach(t => {
+                    t.hasAttribute("data-rocket-src") ? t.hasAttribute("async") && !1 !== t.async ? this
+                        .delayedScripts.async.push(t) : t.hasAttribute("defer") && !1 !== t.defer ||
+                        "module" === t.getAttribute("data-rocket-type") ? this.delayedScripts.defer.push(
+                        t) : this.delayedScripts.normal.push(t) : this.delayedScripts.normal.push(t)
+                })
+            }
+            async _transformScript(t) {
+                return new Promise((await this._littleBreath(), navigator.userAgent.indexOf("Firefox/") > 0 ||
+                    "" === navigator.vendor) ? e => {
+                    let r = document.createElement("script");
+                    [...t.attributes].forEach(t => {
+                        let e = t.nodeName;
+                        "type" !== e && ("data-rocket-type" === e && (e = "type"),
+                            "data-rocket-src" === e && (e = "src"), r.setAttribute(e, t
+                                .nodeValue))
+                    }), t.text && (r.text = t.text), r.hasAttribute("src") ? (r.addEventListener("load",
+                        e), r.addEventListener("error", e)) : (r.text = t.text, e());
+                    try {
+                        t.parentNode.replaceChild(r, t)
+                    } catch (i) {
+                        e()
+                    }
+                } : async e => {
+                    function r() {
+                        t.setAttribute("data-rocket-status", "failed"), e()
+                    }
+                    try {
+                        let i = t.getAttribute("data-rocket-type"),
+                            n = t.getAttribute("data-rocket-src");
+                        t.text, i ? (t.type = i, t.removeAttribute("data-rocket-type")) : t
+                            .removeAttribute("type"), t.addEventListener("load", function r() {
+                                t.setAttribute("data-rocket-status", "executed"), e()
+                            }), t.addEventListener("error", r), n ? (t.removeAttribute(
+                                "data-rocket-src"), t.src = n) : t.src =
+                            "data:text/javascript;base64," + window.btoa(unescape(encodeURIComponent(t
+                                .text)))
+                    } catch (s) {
+                        r()
+                    }
+                })
+            }
+            async _loadScriptsFromList(t) {
+                let e = t.shift();
+                return e && e.isConnected ? (await this._transformScript(e), this._loadScriptsFromList(t)) : Promise
+                    .resolve()
+            }
+            _preloadAllScripts() {
+                this._batchInjectResourceHints([...this.delayedScripts.normal, ...this.delayedScripts.defer, ...this
+                    .delayedScripts.async
+                ], "preload")
+            }
+            _batchInjectResourceHints(t, e) {
+                var r = document.createDocumentFragment();
+                t.forEach(t => {
+                    let i = t.getAttribute && t.getAttribute("data-rocket-src") || t.src;
+                    if (i) {
+                        let n = document.createElement("link");
+                        n.href = i, n.rel = e, "preconnect" !== e && (n.as = "script"), t.getAttribute &&
+                            "module" === t.getAttribute("data-rocket-type") && (n.crossOrigin = !0), t
+                            .crossOrigin && (n.crossOrigin = t.crossOrigin), t.integrity && (n.integrity = t
+                                .integrity), r.appendChild(n), this.trash.push(n)
+                    }
+                }), document.head.appendChild(r)
+            }
+            _delayEventListeners(t) {
+                let e = {};
+
+                function r(t, r) {
+                    ! function t(r) {
+                        !e[r] && (e[r] = {
+                            originalFunctions: {
+                                add: r.addEventListener,
+                                remove: r.removeEventListener
+                            },
+                            eventsToRewrite: []
+                        }, r.addEventListener = function () {
+                            arguments[0] = i(arguments[0]), e[r].originalFunctions.add.apply(r, arguments)
+                        }, r.removeEventListener = function () {
+                            arguments[0] = i(arguments[0]), e[r].originalFunctions.remove.apply(r,
+                                arguments)
+                        });
+
+                        function i(t) {
+                            return e[r].eventsToRewrite.indexOf(t) >= 0 ? "rocket-" + t : t
+                        }
+                    }(t), e[t].eventsToRewrite.push(r)
+                }
+
+                function i(t, e) {
+                    let r = t[e];
+                    Object.defineProperty(t, e, {
+                        get: () => r || function () {},
+                        set(i) {
+                            t["rocket" + e] = r = i
+                        }
+                    })
+                }
+                r(document, "DOMContentLoaded"), r(window, "DOMContentLoaded"), r(window, "load"), r(window,
+                    "pageshow"), r(document, "readystatechange"), i(document, "onreadystatechange"), i(window,
+                    "onload"), i(window, "onpageshow")
+            }
+            _delayJQueryReady(t) {
+                let e;
+
+                function r(r) {
+                    if (r && r.fn && !t.allJQueries.includes(r)) {
+                        r.fn.ready = r.fn.init.prototype.ready = function (e) {
+                            return t.domReadyFired ? e.bind(document)(r) : document.addEventListener(
+                                "rocket-DOMContentLoaded", () => e.bind(document)(r)), r([])
+                        };
+                        let i = r.fn.on;
+                        r.fn.on = r.fn.init.prototype.on = function () {
+                            if (this[0] === window) {
+                                function t(t) {
+                                    return t.split(" ").map(t => "load" === t || 0 === t.indexOf("load.") ?
+                                        "rocket-jquery-load" : t).join(" ")
+                                }
+                                "string" == typeof arguments[0] || arguments[0] instanceof String ? arguments[
+                                    0] = t(arguments[0]) : "object" == typeof arguments[0] && Object.keys(
+                                        arguments[0]).forEach(e => {
+                                        let r = arguments[0][e];
+                                        delete arguments[0][e], arguments[0][t(e)] = r
+                                    })
+                            }
+                            return i.apply(this, arguments), this
+                        }, t.allJQueries.push(r)
+                    }
+                    e = r
+                }
+                r(window.jQuery), Object.defineProperty(window, "jQuery", {
+                    get: () => e,
+                    set(t) {
+                        r(t)
+                    }
+                })
+            }
+            async _triggerDOMContentLoaded() {
+                this.domReadyFired = !0, await this._littleBreath(), document.dispatchEvent(new Event(
+                        "rocket-DOMContentLoaded")), await this._littleBreath(), window.dispatchEvent(new Event(
+                        "rocket-DOMContentLoaded")), await this._littleBreath(), document.dispatchEvent(new Event(
+                        "rocket-readystatechange")), await this._littleBreath(), document
+                    .rocketonreadystatechange && document.rocketonreadystatechange()
+            }
+            async _triggerWindowLoad() {
+                await this._littleBreath(), window.dispatchEvent(new Event("rocket-load")), await this
+                    ._littleBreath(), window.rocketonload && window.rocketonload(), await this._littleBreath(), this
+                    .allJQueries.forEach(t => t(window).trigger("rocket-jquery-load")), await this._littleBreath();
+                let t = new Event("rocket-pageshow");
+                t.persisted = this.persisted, window.dispatchEvent(t), await this._littleBreath(), window
+                    .rocketonpageshow && window.rocketonpageshow({
+                        persisted: this.persisted
+                    })
+            }
+            _handleDocumentWrite() {
+                let t = new Map;
+                document.write = document.writeln = function (e) {
+                    let r = document.currentScript;
+                    r || console.error("WPRocket unable to document.write this: " + e);
+                    let i = document.createRange(),
+                        n = r.parentElement,
+                        s = t.get(r);
+                    void 0 === s && (s = r.nextSibling, t.set(r, s));
+                    let a = document.createDocumentFragment();
+                    i.setStart(a, 0), a.appendChild(i.createContextualFragment(e)), n.insertBefore(a, s)
+                }
+            }
+            async _littleBreath() {
+                Date.now() - this.lastBreath > 45 && (await this._requestAnimFrame(), this.lastBreath = Date.now())
+            }
+            async _requestAnimFrame() {
+                return document.hidden ? new Promise(t => setTimeout(t)) : new Promise(t => requestAnimationFrame(
+                    t))
+            }
+            _emptyTrash() {
+                this.trash.forEach(t => t.remove())
+            }
+            static run() {
+                let t = new RocketLazyLoadScripts;
+                t._addUserInteractionListener(t)
+            }
+        }
+        RocketLazyLoadScripts.run();
+    </script>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>NIMEI 2023/2015 Entrance Exam Result And Interview Placement Student Information</title>
+    <link rel="preload" as="font"
+        href="http://www.neaeagovet.com/wp-content/thesis/skins/effectus/assets/public/icon-fonts/icomoon.woff?-6zo2h2z"
+        crossorigin>
+    <style id="wpr-usedcss">
+        * {
+            margin: 0;
+            padding: 0;
+            word-wrap: break-word
+        }
+
+        html {
+            -webkit-text-size-adjust: 100%;
+            -ms-text-size-adjust: 100%
+        }
+
+        h1,
+        h2 {
+            font-weight: 400
+        }
+
+        img {
+            border: 0
+        }
+
+        code {
+            line-height: 1em
+        }
+
+        img {
+            max-width: 100%;
+            height: auto
+        }
+
+        iframe,
+        object {
+            display: block;
+            max-width: 100%
+        }
+
+        img {
+            display: block
+        }
+
+        .left {
+            display: block;
+            float: left
+        }
+
+        .right {
+            display: block;
+            float: right
+        }
+
+        .center {
+            display: block;
+            float: none;
+            text-align: center;
+            margin-right: auto;
+            margin-left: auto
+        }
+
+        input[type=submit] {
+            cursor: pointer;
+            overflow: visible;
+            -webkit-appearance: none
+        }
+
+        @font-face {
+            font-display: swap;
+            font-family: icomoon;
+            src: url('http://www.neaeagovet.com/wp-content/thesis/skins/effectus/assets/public/icon-fonts/icomoon.eot?-6zo2h2z');
+            src: url('http://www.neaeagovet.com/wp-content/thesis/skins/effectus/assets/public/icon-fonts/icomoon.eot?#iefix-6zo2h2z') format('embedded-opentype'), url('http://www.neaeagovet.com/wp-content/thesis/skins/effectus/assets/public/icon-fonts/icomoon.woff?-6zo2h2z') format('woff'), url('http://www.neaeagovet.com/wp-content/thesis/skins/effectus/assets/public/icon-fonts/icomoon.ttf?-6zo2h2z') format('truetype'), url('http://www.neaeagovet.com/wp-content/thesis/skins/effectus/assets/public/icon-fonts/icomoon.svg?-6zo2h2z#icomoon') format('svg');
+            font-weight: 400;
+            font-style: normal
+        }
+
+        .sidebar .widget li a:before {
+            font-family: icomoon;
+            speak: none;
+            font-style: normal;
+            font-weight: 400;
+            font-variant: normal;
+            text-transform: none;
+            line-height: 1
+        }
+
+        .thesis-killer-recent-entries li a:before {
+            content: "\e609\2000"
+        }
+
+        .column-wrapper,
+        .columns .column-wrapper>.content,
+        .columns .column-wrapper>.sidebar.primary,
+        .columns>.content,
+        .container,
+        .content_container,
+        .wrapper {
+            width: 100%;
+            float: none
+        }
+
+        html {
+            box-sizing: border-box
+        }
+
+        *,
+        :after,
+        :before {
+            box-sizing: inherit
+        }
+
+        body {
+            font-family: Verdana, sans-serif;
+            font-size: 16px;
+            line-height: 29px;
+            color: #111;
+            background-color: #fff
+        }
+
+        code {
+            font-family: Consolas, Monaco, Menlo, Courier, Verdana, sans-serif;
+            border-radius: 3px
+        }
+
+        .left,
+        .right {
+            float: none
+        }
+
+        .columns .column-wrapper>.sidebar.primary {
+            padding: 30px 15px
+        }
+
+        .content_container {
+            background-color: #fff
+        }
+
+        a {
+            color: #2b13c2;
+            text-decoration: none
+        }
+
+        a:hover {
+            color: #09042a
+        }
+
+        p a {
+            text-decoration: none
+        }
+
+        p a:hover {
+            text-decoration: none
+        }
+
+        .post_content li a {
+            border-bottom: 1px dotted;
+            text-decoration: none
+        }
+
+        li a:hover {
+            text-decoration: none
+        }
+
+        .header_container {
+            position: relative;
+            z-index: 999
+        }
+
+        .header_container .headline_container {
+            text-align: center
+        }
+
+        .header_container .headline_container .container {
+            vertical-align: top;
+            padding: 15px
+        }
+
+        #site_title {
+            font-size: 42px;
+            line-height: 1.32em
+        }
+
+        #site_title img {
+            padding: 15px 0;
+            display: inline-block;
+            vertical-align: top
+        }
+
+        #site_title a {
+            outline: 0
+        }
+
+        #site_title a:hover {
+            color: #09042a
+        }
+
+        .nav-container {
+            background-color: #2573c2;
+            margin: 0 auto;
+            vertical-align: top;
+            border-bottom: 3px solid rgba(0, 0, 0, .1)
+        }
+
+        .nav-container .container {
+            display: flex;
+            flex-direction: column
+        }
+
+        .nav {
+            font-size: 13px;
+            line-height: 19px;
+            display: none;
+            position: relative;
+            width: 211px;
+            height: 0;
+            list-style: none;
+            z-index: 2;
+            width: 100%
+        }
+
+        .nav li {
+            background-color: #2573c2;
+            list-style: none;
+            position: relative
+        }
+
+        .nav li a {
+            position: relative;
+            display: block;
+            color: #e1edf9;
+            padding: 15px
+        }
+
+        .nav li a:hover {
+            color: #fff;
+            background-color: #1e5c9b
+        }
+
+        .menu_control {
+            background-color: #2573c2;
+            color: #fff;
+            padding: 7px 15px;
+            display: block;
+            cursor: pointer;
+            margin: 0 auto;
+            padding-right: 15px;
+            padding-left: 15px;
+            text-align: center;
+            width: 100%;
+            user-select: none
+        }
+
+        .menu_control:hover {
+            color: #fff;
+            background-color: #2573c2
+        }
+
+        .show_menu {
+            top: 3px;
+            display: block
+        }
+
+        input[type=email] {
+            font-size: inherit;
+            line-height: inherit;
+            font-family: inherit;
+            font-weight: inherit;
+            color: #111;
+            border: 1px solid #d6d6d6;
+            background-color: #fff;
+            padding: .5em .75em
+        }
+
+        .button,
+        input[type=submit] {
+            color: #fff;
+            background-color: #2573c2;
+            display: inline-block;
+            font-family: inherit;
+            font-weight: 400;
+            font-size: inherit;
+            line-height: inherit;
+            text-shadow: 0 2px 1px rgba(0, 0, 0, .1);
+            text-align: center;
+            text-decoration: none;
+            padding: .4em 1em;
+            border: 3px solid rgba(0, 0, 0, .1);
+            border-width: 0 0 3px;
+            border-radius: 6px;
+            transition: all .2s linear;
+            -webkit-appearance: none
+        }
+
+        .button:hover,
+        input[type=submit]:hover {
+            color: #fff;
+            background-color: #0a1e33;
+            cursor: pointer
+        }
+
+        .button:active,
+        input[type=submit]:active {
+            margin-top: 2px;
+            border-width: 0 0 1px
+        }
+
+        .archive_footer .button {
+            display: block;
+            float: none;
+            margin-bottom: 29px
+        }
+
+        .grt {
+            font-size: 16px;
+            line-height: 29px
+        }
+
+        .grt .headline {
+            font-size: 33px;
+            line-height: 51px
+        }
+
+        .grt .widget_title,
+        .grt h2 {
+            font-size: 26px;
+            line-height: 42px;
+            margin-top: 44px;
+            margin-bottom: 15px
+        }
+
+        .grt .small {
+            font-size: 13px;
+            line-height: 25px
+        }
+
+        .grt .block,
+        .grt .center,
+        .grt .left,
+        .grt .right,
+        .grt p,
+        .grt ul,
+        .headline_area {
+            margin-bottom: 29px
+        }
+
+        .grt ul ul {
+            margin-bottom: 0
+        }
+
+        .grt ul {
+            list-style-type: square
+        }
+
+        .grt ul {
+            margin-left: 29px
+        }
+
+        .grt code {
+            font-size: 15px
+        }
+
+        .grt code {
+            background-color: #ededed
+        }
+
+        .grt code {
+            padding: 2px 4px
+        }
+
+        .grt .widget {
+            margin-top: 58px;
+            margin-bottom: 58px
+        }
+
+        .grt .widget_title {
+            margin-top: 0
+        }
+
+        .grt .thesis-killer-recent-entries a:hover {
+            text-decoration: underline
+        }
+
+        .post_box {
+            position: relative;
+            padding: 29px 15px 0;
+            margin-bottom: 44px;
+            border-top: 1px solid #d6d6d6
+        }
+
+        .post_box.top {
+            border-top: none
+        }
+
+        .headline_area {
+            position: relative;
+            font-size: 13px;
+            line-height: 29px;
+            color: #888
+        }
+
+        .headline_area .headline {
+            margin-top: 0;
+            margin-bottom: 7px
+        }
+
+        .headline,
+        .headline a {
+            color: #111;
+            text-decoration: none
+        }
+
+        .headline a:hover {
+            color: #2b13c2;
+            text-decoration: none
+        }
+
+        .headline_area .byline {
+            position: relative
+        }
+
+        .post_content a {
+            text-decoration: underline
+        }
+
+        .archive_footer {
+            position: relative
+        }
+
+        .post_box .post_excerpt p {
+            margin-bottom: 58px
+        }
+
+        .archive_intro.post_box {
+            border-width: 0 0 1px;
+            border-style: solid;
+            border-color: #d6d6d6;
+            margin-bottom: 0
+        }
+
+        .archive_intro.post_box .headline {
+            margin-bottom: 29px
+        }
+
+        .sidebar {
+            font-size: 13px;
+            line-height: 20px
+        }
+
+        .sidebar .widget {
+            margin-bottom: 40px
+        }
+
+        .sidebar .block,
+        .sidebar .center,
+        .sidebar .left,
+        .sidebar .right,
+        .sidebar p,
+        .sidebar ul {
+            margin-bottom: 20px
+        }
+
+        .sidebar .left {
+            margin-right: 20px
+        }
+
+        .sidebar .right,
+        .sidebar .stack,
+        .sidebar ul ul {
+            margin-left: 20px
+        }
+
+        .sidebar .post_content,
+        .sidebar .post_excerpt {
+            margin-top: 20px
+        }
+
+        .sidebar .post_excerpt p,
+        .sidebar ul ul {
+            margin-bottom: 0
+        }
+
+        .sidebar .headline,
+        .sidebar .widget_title {
+            font-size: 17px;
+            line-height: 25px
+        }
+
+        .sidebar .widget_title {
+            position: relative;
+            color: #fff;
+            text-shadow: 1px 1px 0 rgba(0, 0, 0, .2);
+            background-color: #2b13c2;
+            margin-bottom: 10px;
+            border-bottom: 3px solid #3317e8;
+            padding: 5px 20px
+        }
+
+        .sidebar .thesis-killer-recent-entries .widget_title {
+            margin-bottom: 5px
+        }
+
+        .sidebar .widget_categories>ul {
+            margin-top: -5px
+        }
+
+        .sidebar .widget ul {
+            list-style-type: none
+        }
+
+        .sidebar .widget_text ul {
+            list-style-type: square;
+            margin-left: 20px
+        }
+
+        .sidebar .widget li a {
+            display: block;
+            color: #111;
+            padding: 7px 20px
+        }
+
+        .sidebar .widget li a:before {
+            margin-left: -20px
+        }
+
+        .sidebar .widget li a:hover {
+            background-color: #efecfd
+        }
+
+        .sidebar .widget li a:hover:before {
+            color: #2573c2
+        }
+
+        .sidebar input[type=submit] {
+            padding: 5px 20px;
+            border-radius: 5px
+        }
+
+        .footer_container {
+            background-color: #2573c2;
+            font-size: 13px;
+            line-height: 25px;
+            color: #fff;
+            text-align: center;
+            margin: 0 auto
+        }
+
+        .footer_container .container {
+            background-color: #2573c2
+        }
+
+        .footer {
+            text-align: center;
+            padding: 29px 15px;
+            background: 0 0
+        }
+
+        .footer a {
+            color: #fff;
+            text-decoration: underline
+        }
+
+        .footer a:hover {
+            color: #efecfd;
+            text-decoration: none
+        }
+
+        #ab_video_container {
+            margin-bottom: 0
+        }
+
+        .archive_footer:after,
+        .byline:after,
+        .column-wrapper:after,
+        .columns:after,
+        .container:after,
+        .content:after,
+        .footer_container:after,
+        .header_container:after,
+        .nav-container:after,
+        .post_box:after,
+        .post_content:after,
+        .post_excerpt>p:after,
+        .sidebar:after,
+        .wrapper:after {
+            display: table;
+            clear: both;
+            content: ''
+        }
+
+        @media all and (min-width:858px) {
+
+            .grt .right,
+            .grt .stack {
+                margin-left: 29px
+            }
+
+            .grt .left {
+                margin-right: 29px
+            }
+
+            .archive_footer>.button {
+                float: right;
+                margin-bottom: 0
+            }
+
+            .right {
+                float: right
+            }
+
+            .left {
+                float: left
+            }
+        }
+
+        @media all and (min-width:916px) {
+
+            .columns .column-wrapper>.content,
+            .columns .column-wrapper>.sidebar.primary,
+            .columns>.content,
+            .container {
+                width: 916px;
+                margin: 0 auto;
+                float: none
+            }
+
+            .wrapper {
+                width: 100%;
+                margin: 0 auto
+            }
+        }
+
+        @media all and (min-width:1100px) {
+
+            .columns .column-wrapper>.content,
+            .columns>.content {
+                width: 800px;
+                float: left;
+                border-width: 0 1px 0 0;
+                margin: 0 auto;
+                border-style: solid;
+                border-color: #d6d6d6
+            }
+
+            .footer,
+            .header_container .headline_container .container,
+            .post_box {
+                padding-left: 29px;
+                padding-right: 29px
+            }
+
+            .wrapper {
+                width: 100%;
+                margin: 0 auto
+            }
+
+            .container {
+                width: 1100px
+            }
+
+            .column-wrapper {
+                width: 100%;
+                border-width: 0;
+                float: none;
+                margin: 0 auto;
+                border-style: solid;
+                border-color: #d6d6d6
+            }
+
+            .columns .column-wrapper>.sidebar.primary {
+                width: 300px;
+                float: left;
+                margin: 0 auto;
+                padding: 30px 29px 0;
+                margin-left: -1px
+            }
+
+            .header_container {
+                text-align: center
+            }
+
+            .menu_control {
+                display: none
+            }
+
+            .show_menu {
+                top: auto
+            }
+
+            .nav-container .container {
+                justify-content: center;
+                flex-direction: row
+            }
+
+            .nav {
+                display: flex;
+                vertical-align: top;
+                width: auto;
+                height: auto;
+                padding-left: 15px;
+                padding-right: 15px
+            }
+
+            .nav:before {
+                display: none
+            }
+
+            .nav li {
+                position: relative;
+                background-color: #2573c2
+            }
+
+            .menu_control {
+                margin-left: 0;
+                margin-right: 0
+            }
+
+            .sidebar input[type=submit] {
+                width: 100%
+            }
+        }
+
+        img.emoji {
+            display: inline !important;
+            border: none !important;
+            box-shadow: none !important;
+            height: 1em !important;
+            width: 1em !important;
+            margin: 0 .07em !important;
+            vertical-align: -.1em !important;
+            background: 0 0 !important;
+            padding: 0 !important
+        }
+
+        :where(.wp-block-button__link) {
+            border-radius: 9999px;
+            box-shadow: none;
+            padding: calc(.667em + 2px) calc(1.333em + 2px);
+            text-decoration: none
+        }
+
+        :where(.wp-block-calendar table:not(.has-background) th) {
+            background: #ddd
+        }
+
+        :where(.wp-block-columns.has-background) {
+            padding: 1.25em 2.375em
+        }
+
+        :where(.wp-block-post-comments input[type=submit]) {
+            border: none
+        }
+
+        :where(.wp-block-file__button) {
+            border-radius: 2em;
+            padding: .5em 1em
+        }
+
+        :where(.wp-block-file__button):is(a):active,
+        :where(.wp-block-file__button):is(a):focus,
+        :where(.wp-block-file__button):is(a):hover,
+        :where(.wp-block-file__button):is(a):visited {
+            box-shadow: none;
+            color: #fff;
+            opacity: .85;
+            text-decoration: none
+        }
+
+        ul {
+            box-sizing: border-box
+        }
+
+        :where(.wp-block-navigation.has-background .wp-block-navigation-item a:not(.wp-element-button)),
+        :where(.wp-block-navigation.has-background .wp-block-navigation-submenu a:not(.wp-element-button)) {
+            padding: .5em 1em
+        }
+
+        :where(.wp-block-navigation .wp-block-navigation__submenu-container .wp-block-navigation-item a:not(.wp-element-button)),
+        :where(.wp-block-navigation .wp-block-navigation__submenu-container .wp-block-navigation-submenu a:not(.wp-element-button)),
+        :where(.wp-block-navigation .wp-block-navigation__submenu-container .wp-block-navigation-submenu button.wp-block-navigation-item__content),
+        :where(.wp-block-navigation .wp-block-navigation__submenu-container .wp-block-pages-list__item button.wp-block-navigation-item__content) {
+            padding: .5em 1em
+        }
+
+        :where(p.has-text-color:not(.has-link-color)) a {
+            color: inherit
+        }
+
+        :where(.wp-block-search__button) {
+            border: 1px solid #ccc;
+            padding: .375em .625em
+        }
+
+        :where(.wp-block-search__button-inside .wp-block-search__inside-wrapper) {
+            border: 1px solid #949494;
+            padding: 4px
+        }
+
+        :where(.wp-block-search__button-inside .wp-block-search__inside-wrapper) .wp-block-search__input {
+            border: none;
+            border-radius: 0;
+            padding: 0 0 0 .25em
+        }
+
+        :where(.wp-block-search__button-inside .wp-block-search__inside-wrapper) .wp-block-search__input:focus {
+            outline: 0
+        }
+
+        :where(.wp-block-search__button-inside .wp-block-search__inside-wrapper) :where(.wp-block-search__button) {
+            padding: .125em .5em
+        }
+
+        :where(pre.wp-block-verse) {
+            font-family: inherit
+        }
+
+        :root {
+            --wp--preset--font-size--normal: 16px;
+            --wp--preset--font-size--huge: 42px
+        }
+
+        html :where(.has-border-color) {
+            border-style: solid
+        }
+
+        html :where([style*=border-top-color]) {
+            border-top-style: solid
+        }
+
+        html :where([style*=border-right-color]) {
+            border-right-style: solid
+        }
+
+        html :where([style*=border-bottom-color]) {
+            border-bottom-style: solid
+        }
+
+        html :where([style*=border-left-color]) {
+            border-left-style: solid
+        }
+
+        html :where([style*=border-width]) {
+            border-style: solid
+        }
+
+        html :where([style*=border-top-width]) {
+            border-top-style: solid
+        }
+
+        html :where([style*=border-right-width]) {
+            border-right-style: solid
+        }
+
+        html :where([style*=border-bottom-width]) {
+            border-bottom-style: solid
+        }
+
+        html :where([style*=border-left-width]) {
+            border-left-style: solid
+        }
+
+        html :where(img[class*=wp-image-]) {
+            height: auto;
+            max-width: 100%
+        }
+
+        html :where(.is-position-sticky) {
+            --wp-admin--admin-bar--position-offset: var(--wp-admin--admin-bar--height, 0px)
+        }
+
+        @media screen and (max-width:600px) {
+            html :where(.is-position-sticky) {
+                --wp-admin--admin-bar--position-offset: 0px
+            }
+        }
+
+        body {
+            --wp--preset--color--black: #000000;
+            --wp--preset--color--cyan-bluish-gray: #abb8c3;
+            --wp--preset--color--white: #ffffff;
+            --wp--preset--color--pale-pink: #f78da7;
+            --wp--preset--color--vivid-red: #cf2e2e;
+            --wp--preset--color--luminous-vivid-orange: #ff6900;
+            --wp--preset--color--luminous-vivid-amber: #fcb900;
+            --wp--preset--color--light-green-cyan: #7bdcb5;
+            --wp--preset--color--vivid-green-cyan: #00d084;
+            --wp--preset--color--pale-cyan-blue: #8ed1fc;
+            --wp--preset--color--vivid-cyan-blue: #0693e3;
+            --wp--preset--color--vivid-purple: #9b51e0;
+            --wp--preset--gradient--vivid-cyan-blue-to-vivid-purple: linear-gradient(135deg, rgba(6, 147, 227, 1) 0%, rgb(155, 81, 224) 100%);
+            --wp--preset--gradient--light-green-cyan-to-vivid-green-cyan: linear-gradient(135deg, rgb(122, 220, 180) 0%, rgb(0, 208, 130) 100%);
+            --wp--preset--gradient--luminous-vivid-amber-to-luminous-vivid-orange: linear-gradient(135deg, rgba(252, 185, 0, 1) 0%, rgba(255, 105, 0, 1) 100%);
+            --wp--preset--gradient--luminous-vivid-orange-to-vivid-red: linear-gradient(135deg, rgba(255, 105, 0, 1) 0%, rgb(207, 46, 46) 100%);
+            --wp--preset--gradient--very-light-gray-to-cyan-bluish-gray: linear-gradient(135deg, rgb(238, 238, 238) 0%, rgb(169, 184, 195) 100%);
+            --wp--preset--gradient--cool-to-warm-spectrum: linear-gradient(135deg, rgb(74, 234, 220) 0%, rgb(151, 120, 209) 20%, rgb(207, 42, 186) 40%, rgb(238, 44, 130) 60%, rgb(251, 105, 98) 80%, rgb(254, 248, 76) 100%);
+            --wp--preset--gradient--blush-light-purple: linear-gradient(135deg, rgb(255, 206, 236) 0%, rgb(152, 150, 240) 100%);
+            --wp--preset--gradient--blush-bordeaux: linear-gradient(135deg, rgb(254, 205, 165) 0%, rgb(254, 45, 45) 50%, rgb(107, 0, 62) 100%);
+            --wp--preset--gradient--luminous-dusk: linear-gradient(135deg, rgb(255, 203, 112) 0%, rgb(199, 81, 192) 50%, rgb(65, 88, 208) 100%);
+            --wp--preset--gradient--pale-ocean: linear-gradient(135deg, rgb(255, 245, 203) 0%, rgb(182, 227, 212) 50%, rgb(51, 167, 181) 100%);
+            --wp--preset--gradient--electric-grass: linear-gradient(135deg, rgb(202, 248, 128) 0%, rgb(113, 206, 126) 100%);
+            --wp--preset--gradient--midnight: linear-gradient(135deg, rgb(2, 3, 129) 0%, rgb(40, 116, 252) 100%);
+            --wp--preset--duotone--dark-grayscale: url('#wp-duotone-dark-grayscale');
+            --wp--preset--duotone--grayscale: url('#wp-duotone-grayscale');
+            --wp--preset--duotone--purple-yellow: url('#wp-duotone-purple-yellow');
+            --wp--preset--duotone--blue-red: url('#wp-duotone-blue-red');
+            --wp--preset--duotone--midnight: url('#wp-duotone-midnight');
+            --wp--preset--duotone--magenta-yellow: url('#wp-duotone-magenta-yellow');
+            --wp--preset--duotone--purple-green: url('#wp-duotone-purple-green');
+            --wp--preset--duotone--blue-orange: url('#wp-duotone-blue-orange');
+            --wp--preset--font-size--small: 13px;
+            --wp--preset--font-size--medium: 20px;
+            --wp--preset--font-size--large: 36px;
+            --wp--preset--font-size--x-large: 42px;
+            --wp--preset--spacing--20: 0.44rem;
+            --wp--preset--spacing--30: 0.67rem;
+            --wp--preset--spacing--40: 1rem;
+            --wp--preset--spacing--50: 1.5rem;
+            --wp--preset--spacing--60: 2.25rem;
+            --wp--preset--spacing--70: 3.38rem;
+            --wp--preset--spacing--80: 5.06rem;
+            --wp--preset--shadow--natural: 6px 6px 9px rgba(0, 0, 0, .2);
+            --wp--preset--shadow--deep: 12px 12px 50px rgba(0, 0, 0, .4);
+            --wp--preset--shadow--sharp: 6px 6px 0px rgba(0, 0, 0, .2);
+            --wp--preset--shadow--outlined: 6px 6px 0px -3px rgba(255, 255, 255, 1), 6px 6px rgba(0, 0, 0, 1);
+            --wp--preset--shadow--crisp: 6px 6px 0px rgba(0, 0, 0, 1)
+        }
+
+        :where(.is-layout-flex) {
+            gap: .5em
+        }
+
+        :where(.wp-block-columns.is-layout-flex) {
+            gap: 2em
+        }
+    </style>
+    <link href="http://www.neaeagovet.com/feed/" rel="alternate" type="application/rss+xml" title="NEAEA 2023 feed" />
+    <link href="http://www.neaeagovet.com/xmlrpc.php" rel="pingback" />
+    <link href="http://www.neaeagovet.com/wp-content/uploads/2018/05/favicon.png" rel="shortcut icon" />
+    <meta name='robots' content='index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1' />
+
+    <!-- This site is optimized with the Yoast SEO plugin v21.3 - https://yoast.com/wordpress/plugins/seo/ -->
+    <meta name="description"
+        content="2015 E.C NIMEI Written Entrance Exam Result And Interview Site, Date &amp; Time: NIMEI Result 2015 (E.C.) Placement National Entrance Examination Results 2023" />
+    <link rel="canonical" href="http://www.neaeagovet.com/nimei/" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:type" content="article" />
+    <meta property="og:title"
+        content="NIMEI 2023/2015 Entrance Exam Result And Interview Placement Student Information" />
+    <meta property="og:description"
+        content="2015 E.C NIMEI Written Entrance Exam Result And Interview Site, Date &amp; Time: NIMEI Result 2015 (E.C.) Placement National Entrance Examination Results 2023" />
+    <meta property="og:url" content="http://www.neaeagovet.com/nimei/" />
+    <meta property="og:site_name" content="NEAEA 2023" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <script type="application/ld+json" class="yoast-schema-graph">
+        {
+            "@context": "https://schema.org",
+            "@graph": [{
+                "@type": "CollectionPage",
+                "@id": "http://www.neaeagovet.com/nimei/",
+                "url": "http://www.neaeagovet.com/nimei/",
+                "name": "NIMEI 2023/2015 Entrance Exam Result And Interview Placement Student Information",
+                "isPartOf": {
+                    "@id": "https://www.neaeagovet.com/#website"
+                },
+                "description": "2015 E.C NIMEI Written Entrance Exam Result And Interview Site, Date & Time: NIMEI Result 2015 (E.C.) Placement National Entrance Examination Results 2023",
+                "breadcrumb": {
+                    "@id": "http://www.neaeagovet.com/nimei/#breadcrumb"
+                },
+                "inLanguage": "en-US"
+            }, {
+                "@type": "BreadcrumbList",
+                "@id": "http://www.neaeagovet.com/nimei/#breadcrumb",
+                "itemListElement": [{
+                    "@type": "ListItem",
+                    "position": 1,
+                    "name": "Home",
+                    "item": "http://www.neaeagovet.com/"
+                }, {
+                    "@type": "ListItem",
+                    "position": 2,
+                    "name": "NIMEI"
+                }]
+            }, {
+                "@type": "WebSite",
+                "@id": "https://www.neaeagovet.com/#website",
+                "url": "https://www.neaeagovet.com/",
+                "name": "NEAEA 2019",
+                "description": "result neaea gov et",
+                "publisher": {
+                    "@id": "https://www.neaeagovet.com/#organization"
+                },
+                "potentialAction": [{
+                    "@type": "SearchAction",
+                    "target": {
+                        "@type": "EntryPoint",
+                        "urlTemplate": "https://www.neaeagovet.com/?s={search_term_string}"
+                    },
+                    "query-input": "required name=search_term_string"
+                }],
+                "inLanguage": "en-US"
+            }, {
+                "@type": "Organization",
+                "@id": "https://www.neaeagovet.com/#organization",
+                "name": "neaea gov et",
+                "url": "https://www.neaeagovet.com/",
+                "logo": {
+                    "@type": "ImageObject",
+                    "inLanguage": "en-US",
+                    "@id": "https://www.neaeagovet.com/#/schema/logo/image/",
+                    "url": "http://www.neaeagovet.com/wp-content/uploads/2018/05/favicon.png",
+                    "contentUrl": "http://www.neaeagovet.com/wp-content/uploads/2018/05/favicon.png",
+                    "width": 50,
+                    "height": 40,
+                    "caption": "neaea gov et"
+                },
+                "image": {
+                    "@id": "https://www.neaeagovet.com/#/schema/logo/image/"
+                },
+                "sameAs": ["https://www.facebook.com/Ethiopia-National-Exam-Results-354404742140001/"]
+            }]
+        }
+    </script>
+    <!-- / Yoast SEO plugin. -->
+
+
+
+    <link rel="alternate" type="application/rss+xml" title="NEAEA 2023 &raquo; NIMEI Category Feed"
+        href="http://www.neaeagovet.com/nimei/feed/" />
+    <style type="text/css"></style>
+
+    <style id='global-styles-inline-css' type='text/css'></style>
+    <link rel="https://api.w.org/" href="http://www.neaeagovet.com/wp-json/" />
+    <link rel="alternate" type="application/json" href="http://www.neaeagovet.com/wp-json/wp/v2/categories/12" />
+</head>
+
+<body class="template-category template-nimei fixed-layout">
+    <div class="wrapper">
+        <div class="header_container">
+            <div id="header">
+                <div class="nav-container">
+                    <div class="container">
+                        <span class="menu_control">≡ Menu</span>
+                        <ul id="menu-1" class="nav">
+                           
+                            <li id="menu-item-290"
+                                class="menu-item menu-item-type-custom menu-item-object-custom menu-item-290"><a
+                                    href="/news.html">News</a></li>
+
+                            <li id="menu-item-102"
+                                class="menu-item menu-item-type-custom menu-item-object-custom menu-item-102"><a
+                                    href="/cindex.html">Grade 12 Result</a></li>
+                            <li id="menu-item-860"
+                                class="menu-item menu-item-type-custom menu-item-object-custom menu-item-860"><a
+                                    href="/ministryresult.html">Ministry Exam Results</a>
+                            </li>
+                            <li id="menu-item-67"
+                                class="menu-item menu-item-type-custom menu-item-object-custom menu-item-67"><a
+                                    href="/EUEE.html">EUEE</a></li>
+                            <li id="menu-item-88"
+                                class="menu-item menu-item-type-custom menu-item-object-custom current-menu-item menu-item-88">
+                                <a href="/NIMEI.html" aria-current="page">NIMEI</a></li>
+                            <li id="menu-item-158"
+                                class="menu-item menu-item-type-custom menu-item-object-custom menu-item-158"><a
+                                    href="/university.html">University</a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="headline_container">
+                    <div class="container">
+                        <div id="site_title" class="has-logo"><img id="thesis_logo_image"
+                                src="http://www.neaeagovet.com/wp-content/uploads/2018/05/neaea.png" alt="NEAEA 2023"
+                                width="612" height="96" /></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="content_container">
+            <div class="container">
+                <div class="columns">
+                    <div class="column-wrapper">
+                        <div class="content">
+                            <div class="archive_intro post_box grt top">
+                                <h1 class="archive_title headline">NIMEI</h1>
+                            </div>
+                            <div class='code-block code-block-1'
+                                style='margin: 8px auto; text-align: center; display: block; clear: both;'>
+                                <script type="rocketlazyloadscript" async
+                                    data-rocket-src="//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+                                <!-- jbd-link -->
+                                <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-5631806447262999"
+                                    data-ad-slot="1568323070" data-ad-format="link"></ins>
+                                <script type="rocketlazyloadscript">
+                                    (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+                            </div>
+                            <article id="post-73" class="post_box grt top">
+                                <div class="headline_area">
+                                    <h2 class="headline"><a href="http://www.neaeagovet.com/nimei-result/"
+                                            rel="bookmark">NIMEI Result 2015 E.C. (2023)</a></h2>
+                                    <div class="byline small">
+                                    </div>
+                                </div>
+                                <div class="post_content post_excerpt">
+                                    <p>NIMEI Result 2015 E.C. (2023) 2023 E.C NIMEI Written Entrance Exam Result And
+                                        Interview Site, Date &amp; Time: NIMEI Result 2011 (E.C.) Placement National
+                                        Entrance Examination Results 2020. The NIMEI the new national medical Education
+                                        system which is a joint initiative by the two Ministries, the Ministry of Health
+                                        and the Ministry of Education of [...]</p>
+                                </div>
+                                <div class="archive_footer">
+                                    <a class="button" href="http://www.neaeagovet.com/nimei-result/">Read More</a>
+                                </div>
+                            </article>
+                            <article id="post-81" class="post_box grt">
+                                <div class="headline_area">
+                                    <h2 class="headline"><a href="http://www.neaeagovet.com/nimei-2010-e-c-2018/"
+                                            rel="bookmark">NIMEI 2011 E.C. (2019)</a></h2>
+                                    <div class="byline small">
+                                    </div>
+                                </div>
+                                <div class="post_content post_excerpt">
+                                    <p>New Innovative Medical Education Initiative (NIMEI) 2011 E.C. (2019)
+                                        www.nae.gov.et NIMEI is a Government Initiative Leadership: joint FMOH and FMOE
+                                        Under the focus of the of Medical and Health Sciences and Curriculum Council .
+                                        Curriculum development: was by taskforce from FMOH, Tulane University, FMOE, 5
+                                        Universities, WHO and Jhpiego. Currently has wide base partner’s involvement
+                                        [...]</p>
+                                </div>
+                                <div class="archive_footer">
+                                    <a class="button" href="http://www.neaeagovet.com/nimei-2010-e-c-2018/">Read
+                                        More</a> </div>
+                            </article>
+                            <article id="post-286" class="post_box grt">
+                                <div class="headline_area">
+                                    <h2 class="headline"><a href="http://www.neaeagovet.com/neaea-news/"
+                                            rel="bookmark">NEAEA News 2022/2014 (Today&#8217;s Top Breaking News)
+                                            Ethiopia</a></h2>
+                                    <div class="byline small">
+                                    </div>
+                                </div>
+                                <div class="post_content post_excerpt">
+                                </div>
+                                <div class="archive_footer">
+                                    <a class="button" href="http://www.neaeagovet.com/neaea-news/">Read More</a> </div>
+                            </article>
+                        </div>
+                        <div class="sidebar primary">
+                            <div class="widget widget_text" id="text-4">
+                                <p class="widget_title">Like &#038; Get Result</p>
+                                <div class="textwidget">
+                                    <div id="fb-root"></div>
+                                    <p>
+                                        <script type="rocketlazyloadscript" async defer crossorigin="anonymous"
+                                            data-rocket-src="https://connect.facebook.net/en_US/sdk.js#xfbml=1&#038;version=v3.3&#038;appId=1873448376016038&#038;autoLogAppEvents=1">
+                                        </script>
+                                    </p>
+                                    <div class="fb-like"
+                                        data-href="https://www.facebook.com/Ethiopia-National-Exam-Results-354404742140001/"
+                                        data-width="" data-layout="box_count" data-action="like" data-size="large"
+                                        data-show-faces="false" data-share="true"></div>
+                                </div>
+                            </div>
+                            <div class="widget widget_categories" id="categories-3">
+                                <p class="widget_title">NEA Information</p>
+                                <ul>
+                                    <li class="cat-item cat-item-18"><a
+                                            href="http://www.neaeagovet.com/colleges/">Colleges</a>
+                                    </li>
+                                    <li class="cat-item cat-item-40"><a
+                                            href="http://www.neaeagovet.com/eaes-edu-et/">eaes.edu.et</a>
+                                    </li>
+                                    <li class="cat-item cat-item-15"><a
+                                            href="http://www.neaeagovet.com/vacancy/">Ethiojobs Vacancy</a>
+                                    </li>
+                                    <li class="cat-item cat-item-39"><a href="http://www.neaeagovet.com/exit-exam/">Exit
+                                            Exam</a>
+                                    </li>
+                                    <li class="cat-item cat-item-4"><a href="http://www.neaeagovet.com/grade-10/">Grade
+                                            10</a>
+                                    </li>
+                                    <li class="cat-item cat-item-5"><a href="http://www.neaeagovet.com/grade-12/">Grade
+                                            12</a>
+                                    </li>
+                                    <li class="cat-item cat-item-36"><a href="http://www.neaeagovet.com/grade-6/">Grade
+                                            6</a>
+                                    </li>
+                                    <li class="cat-item cat-item-7"><a href="http://www.neaeagovet.com/grade-8/">Grade
+                                            8</a>
+                                    </li>
+                                    <li class="cat-item cat-item-3"><a
+                                            href="http://www.neaeagovet.com/grade-report/">Grade Report</a>
+                                    </li>
+                                    <li class="cat-item cat-item-19"><a
+                                            href="http://www.neaeagovet.com/herqa/">HERQA</a>
+                                    </li>
+                                    <li class="cat-item cat-item-16"><a
+                                            href="http://www.neaeagovet.com/intake-capacity/">Intake Capacity</a>
+                                    </li>
+                                    <li class="cat-item cat-item-11"><a
+                                            href="http://www.neaeagovet.com/matric-result/">Matric Result 2023</a>
+                                    </li>
+                                    <li class="cat-item cat-item-35"><a
+                                            href="http://www.neaeagovet.com/ministry-exam-result/">Ministry Exam
+                                            Result</a>
+                                    </li>
+                                    <li class="cat-item cat-item-6"><a
+                                            href="http://www.neaeagovet.com/national-exam/">National Exam</a>
+                                    </li>
+                                    <li class="cat-item cat-item-12 current-cat"><a aria-current="page"
+                                            href="http://www.neaeagovet.com/nimei/">NIMEI</a>
+                                    </li>
+                                    <li class="cat-item cat-item-41"><a
+                                            href="http://www.neaeagovet.com/oromia-ministry-et/">oromia.ministry.et</a>
+                                    </li>
+                                    <li class="cat-item cat-item-13"><a
+                                            href="http://www.neaeagovet.com/placement/">Placement</a>
+                                    </li>
+                                    <li class="cat-item cat-item-34"><a
+                                            href="http://www.neaeagovet.com/placement-ethernet-edu-et/">placement.ethernet.edu.et</a>
+                                    </li>
+                                    <li class="cat-item cat-item-33"><a
+                                            href="http://www.neaeagovet.com/result-ethernet-edu-et/">result.ethernet.edu.et</a>
+                                    </li>
+                                    <li class="cat-item cat-item-17"><a
+                                            href="http://www.neaeagovet.com/sphmmc/">SPHMMC</a>
+                                    </li>
+                                    <li class="cat-item cat-item-2"><a
+                                            href="http://www.neaeagovet.com/student-result/">Student Result 8080</a>
+                                    </li>
+                                    <li class="cat-item cat-item-14"><a
+                                            href="http://www.neaeagovet.com/university/">University</a>
+                                    </li>
+                                    <li class="cat-item cat-item-37"><a
+                                            href="http://www.neaeagovet.com/www-aa-ministry-et/">www.aa.ministry.et</a>
+                                    </li>
+                                    <li class="cat-item cat-item-38"><a
+                                            href="http://www.neaeagovet.com/www-aa6-ministry-et/">www.aa6.ministry.et</a>
+                                    </li>
+                                    <li class="cat-item cat-item-9"><a
+                                            href="http://www.neaeagovet.com/www-nae-gov-et/">www.nae.gov.et</a>
+                                    </li>
+                                    <li class="cat-item cat-item-10"><a
+                                            href="http://www.neaeagovet.com/www-neaea-gov-et/">www.neaea.gov.et</a>
+                                    </li>
+                                </ul>
+
+                            </div>
+                            <div class="widget thesis-killer-recent-entries widget_kre"
+                                id="thesis-killer-recent-entries-2">
+                                <p class="widget_title">Recent Topics</p>
+                                <ul>
+                                    <li><a href="http://www.neaeagovet.com/oromia-education-bureau-grade-8-result/"
+                                            title="Read Oromia Education Bureau Grade 8 Result 2023/2015 oromia.ministry.et"
+                                            rel="bookmark">Oromia Education Bureau Grade 8 Result 2023/2015
+                                            oromia.ministry.et</a></li>
+                                    <li><a href="http://www.neaeagovet.com/grade-8-ministry-exam-result/"
+                                            title="Read Grade 8 Ministry Exam Result 2015 (2023)" rel="bookmark">Grade 8
+                                            Ministry Exam Result 2015 (2023)</a></li>
+                                    <li><a href="http://www.neaeagovet.com/exit-exam-result/"
+                                            title="Read Exit Exam Result 2023 (Ethiopia) @result.ethernet.edu.et"
+                                            rel="bookmark">Exit Exam Result 2023 (Ethiopia) @result.ethernet.edu.et</a>
+                                    </li>
+                                    <li><a href="http://www.neaeagovet.com/addis-ababa-education-bureau-grade-6-result/"
+                                            title="Read Addis Ababa Education Bureau Grade 6 Result 2023 aa6.ministry.et"
+                                            rel="bookmark">Addis Ababa Education Bureau Grade 6 Result 2023
+                                            aa6.ministry.et</a></li>
+                                    <li><a href="http://www.neaeagovet.com/6th-grade-ministry-result/"
+                                            title="Read 6th Grade Ministry Result 2023 (Ethiopia)" rel="bookmark">6th
+                                            Grade Ministry Result 2023 (Ethiopia)</a></li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="footer_container">
+            <div class="container">
+                <div class="footer">
+                    <div class="widget widget_text" id="text-3">
+                        <div class="textwidget">
+                            <p style="text-align: center;"><strong>© 2018 Copyright | All Rights Reserved</strong><br />
+                                All material on this website is copyrighted. This material is not endorsed or approved
+                                by<strong> NEA</strong> (National Assessment Agency) or <strong>NEAEA</strong> (National
+                                Educational Assessment and Examinations Agency) or any other Institution of Ethiopia</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script type="rocketlazyloadscript" id="rocket-browser-checker-js-after" data-rocket-type="text/javascript">
+        "use strict";var _createClass=function(){function defineProperties(target,props){for(var i=0;i<props.length;i++){var descriptor=props[i];descriptor.enumerable=descriptor.enumerable||!1,descriptor.configurable=!0,"value"in descriptor&&(descriptor.writable=!0),Object.defineProperty(target,descriptor.key,descriptor)}}return function(Constructor,protoProps,staticProps){return protoProps&&defineProperties(Constructor.prototype,protoProps),staticProps&&defineProperties(Constructor,staticProps),Constructor}}();function _classCallCheck(instance,Constructor){if(!(instance instanceof Constructor))throw new TypeError("Cannot call a class as a function")}var RocketBrowserCompatibilityChecker=function(){function RocketBrowserCompatibilityChecker(options){_classCallCheck(this,RocketBrowserCompatibilityChecker),this.passiveSupported=!1,this._checkPassiveOption(this),this.options=!!this.passiveSupported&&options}return _createClass(RocketBrowserCompatibilityChecker,[{key:"_checkPassiveOption",value:function(self){try{var options={get passive(){return!(self.passiveSupported=!0)}};window.addEventListener("test",null,options),window.removeEventListener("test",null,options)}catch(err){self.passiveSupported=!1}}},{key:"initRequestIdleCallback",value:function(){!1 in window&&(window.requestIdleCallback=function(cb){var start=Date.now();return setTimeout(function(){cb({didTimeout:!1,timeRemaining:function(){return Math.max(0,50-(Date.now()-start))}})},1)}),!1 in window&&(window.cancelIdleCallback=function(id){return clearTimeout(id)})}},{key:"isDataSaverModeOn",value:function(){return"connection"in navigator&&!0===navigator.connection.saveData}},{key:"supportsLinkPrefetch",value:function(){var elem=document.createElement("link");return elem.relList&&elem.relList.supports&&elem.relList.supports("prefetch")&&window.IntersectionObserver&&"isIntersecting"in IntersectionObserverEntry.prototype}},{key:"isSlowConnection",value:function(){return"connection"in navigator&&"effectiveType"in navigator.connection&&("2g"===navigator.connection.effectiveType||"slow-2g"===navigator.connection.effectiveType)}}]),RocketBrowserCompatibilityChecker}();
+</script>
+    <script type='text/javascript' id='rocket-preload-links-js-extra'>
+        /* <![CDATA[ */
+        var RocketPreloadLinksConfig = {
+            "excludeUris": "\/(?:.+\/)?feed(?:\/(?:.+\/?)?)?$|\/(?:.+\/)?embed\/|\/(index.php\/)?(.*)wp-json(\/.*|$)|\/refer\/|\/go\/|\/recommend\/|\/recommends\/",
+            "usesTrailingSlash": "1",
+            "imageExt": "jpg|jpeg|gif|png|tiff|bmp|webp|avif|pdf|doc|docx|xls|xlsx|php",
+            "fileExt": "jpg|jpeg|gif|png|tiff|bmp|webp|avif|pdf|doc|docx|xls|xlsx|php|html|htm",
+            "siteUrl": "http:\/\/www.neaeagovet.com",
+            "onHoverDelay": "100",
+            "rateThrottle": "3"
+        };
+        /* ]]> */
+    </script>
+    <script type="rocketlazyloadscript" id="rocket-preload-links-js-after" data-rocket-type="text/javascript">
+        (function() {
+"use strict";var r="function"==typeof Symbol&&"symbol"==typeof Symbol.iterator?function(e){return typeof e}:function(e){return e&&"function"==typeof Symbol&&e.constructor===Symbol&&e!==Symbol.prototype?"symbol":typeof e},e=function(){function i(e,t){for(var n=0;n<t.length;n++){var i=t[n];i.enumerable=i.enumerable||!1,i.configurable=!0,"value"in i&&(i.writable=!0),Object.defineProperty(e,i.key,i)}}return function(e,t,n){return t&&i(e.prototype,t),n&&i(e,n),e}}();function i(e,t){if(!(e instanceof t))throw new TypeError("Cannot call a class as a function")}var t=function(){function n(e,t){i(this,n),this.browser=e,this.config=t,this.options=this.browser.options,this.prefetched=new Set,this.eventTime=null,this.threshold=1111,this.numOnHover=0}return e(n,[{key:"init",value:function(){!this.browser.supportsLinkPrefetch()||this.browser.isDataSaverModeOn()||this.browser.isSlowConnection()||(this.regex={excludeUris:RegExp(this.config.excludeUris,"i"),images:RegExp(".("+this.config.imageExt+")$","i"),fileExt:RegExp(".("+this.config.fileExt+")$","i")},this._initListeners(this))}},{key:"_initListeners",value:function(e){-1<this.config.onHoverDelay&&document.addEventListener("mouseover",e.listener.bind(e),e.listenerOptions),document.addEventListener("mousedown",e.listener.bind(e),e.listenerOptions),document.addEventListener("touchstart",e.listener.bind(e),e.listenerOptions)}},{key:"listener",value:function(e){var t=e.target.closest("a"),n=this._prepareUrl(t);if(null!==n)switch(e.type){case"mousedown":case"touchstart":this._addPrefetchLink(n);break;case"mouseover":this._earlyPrefetch(t,n,"mouseout")}}},{key:"_earlyPrefetch",value:function(t,e,n){var i=this,r=setTimeout(function(){if(r=null,0===i.numOnHover)setTimeout(function(){return i.numOnHover=0},1e3);else if(i.numOnHover>i.config.rateThrottle)return;i.numOnHover++,i._addPrefetchLink(e)},this.config.onHoverDelay);t.addEventListener(n,function e(){t.removeEventListener(n,e,{passive:!0}),null!==r&&(clearTimeout(r),r=null)},{passive:!0})}},{key:"_addPrefetchLink",value:function(i){return this.prefetched.add(i.href),new Promise(function(e,t){var n=document.createElement("link");n.rel="prefetch",n.href=i.href,n.onload=e,n.onerror=t,document.head.appendChild(n)}).catch(function(){})}},{key:"_prepareUrl",value:function(e){if(null===e||"object"!==(void 0===e?"undefined":r(e))||!1 in e||-1===["http:","https:"].indexOf(e.protocol))return null;var t=e.href.substring(0,this.config.siteUrl.length),n=this._getPathname(e.href,t),i={original:e.href,protocol:e.protocol,origin:t,pathname:n,href:t+n};return this._isLinkOk(i)?i:null}},{key:"_getPathname",value:function(e,t){var n=t?e.substring(this.config.siteUrl.length):e;return n.startsWith("/")||(n="/"+n),this._shouldAddTrailingSlash(n)?n+"/":n}},{key:"_shouldAddTrailingSlash",value:function(e){return this.config.usesTrailingSlash&&!e.endsWith("/")&&!this.regex.fileExt.test(e)}},{key:"_isLinkOk",value:function(e){return null!==e&&"object"===(void 0===e?"undefined":r(e))&&(!this.prefetched.has(e.href)&&e.origin===this.config.siteUrl&&-1===e.href.indexOf("?")&&-1===e.href.indexOf("#")&&!this.regex.excludeUris.test(e.href)&&!this.regex.images.test(e.href))}}],[{key:"run",value:function(){"undefined"!=typeof RocketPreloadLinksConfig&&new n(new RocketBrowserCompatibilityChecker({capture:!0,passive:!0}),RocketPreloadLinksConfig).init()}}]),n}();t.run();
+}());
+</script>
+    <script type="rocketlazyloadscript" data-minify="1" data-rocket-type='text/javascript'
+        data-rocket-src='http://www.neaeagovet.com/wp-content/cache/min/1/wp-content/thesis/skins/effectus/assets/public/js/skin.js?ver=1696406184'
+        id='effectus-skin-js' defer></script>
+    <script type="rocketlazyloadscript" data-rocket-type="text/javascript">
+        (function(d,g){d[g]||(d[g]=function(g){return this.querySelectorAll("."+g)},Element.prototype[g]=d[g])})(document,"getElementsByClassName");(function(){var classes = document.getElementsByClassName('menu_control');for (i = 0; i < classes.length; i++) {classes[i].onclick = function() {var menu = this.nextElementSibling;if (/show_menu/.test(menu.className))menu.className = menu.className.replace('show_menu', '').trim();else menu.className += ' show_menu';if (/menu_control_triggered/.test(this.className))this.className = this.className.replace('menu_control_triggered', '').trim();else this.className += ' menu_control_triggered';};}})();
+    </script>
+    <noscript>
+        <style type="text/css" scoped>
+            .nav {
+                display: block;
+            }
+        </style>
+    </noscript>
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script type="rocketlazyloadscript" async
+        data-rocket-src="https://www.googletagmanager.com/gtag/js?id=UA-145305759-1"></script>
+    <script type="rocketlazyloadscript">
+        window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'UA-145305759-1');
+</script>
+</body>
+
+</html>
+<!-- This website is like a Rocket, isn't it? Performance optimized by WP Rocket. Learn more: https://wp-rocket.me - Debug: cached@1696596050 -->

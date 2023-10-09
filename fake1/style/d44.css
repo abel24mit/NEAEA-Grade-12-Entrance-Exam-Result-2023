@@ -1,0 +1,100 @@
+
+
+/* .input-group-addon {
+padding: 6px 12px;
+font-size: 14px;
+font-weight: normal;
+line-height: 1;
+color: #555555;
+text-align: center;
+background-color: #eeeeee;
+border: 1px solid #ccc;
+border-radius: 4px;
+} */
+.mili{
+  margin-left: 400px;
+  margin-right: 400px;
+}
+a{
+    color: rgb(0, 17, 255);
+}
+.Introduction {
+    text-align: right;
+    background-color: rgb(73, 115, 206);
+    display: block;
+ /*width: 100%;*/
+height: 31px; 
+    font-size: 14px;
+    /* line-height: 1.42857143; */
+    
+    color: #fcfcfc;
+    font-size: 14px;
+    font-weight: bold;
+    background-image: none;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+.section1 {
+    /* margin-top: 24px; */
+    background-color: rgb(102, 147, 216);
+    display: block;
+/* width: 100%;
+height: 31px; */
+margin-left:400px ;
+margin-right:400px ;
+    font-size: 14px;
+    /* line-height: 1.42857143; */
+    
+    color: #fcfcfc;
+    font-size: 14px;
+    font-weight: bold;
+    background-image: none;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    /* -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075);
+    box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075);
+    -webkit-transition: border-color ease-in-out 0.15s,
+      box-shadow ease-in-out 0.15s;
+    -o-transition: border-color ease-in-out 0.15s, box-shadow ease-in-out 0.15s;
+    transition: border-color ease-in-out 0.15s, box-shadow ease-in-out 0.15s; */
+}
+
+.form-control {
+    display: block;
+    width: 100%;
+    height: 31px;
+    padding: 6px 12px;
+    font-size: 14px;
+    line-height: 1.42857143;
+    color: #555555;
+    background-color: #fff;
+    background-image: none;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075);
+    box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075);
+    -webkit-transition: border-color ease-in-out 0.15s,
+      box-shadow ease-in-out 0.15s;
+    -o-transition: border-color ease-in-out 0.15s, box-shadow ease-in-out 0.15s;
+    transition: border-color ease-in-out 0.15s, box-shadow ease-in-out 0.15s;
+  }
+  .Moe{
+    border: dotted 1px rgb(231, 3, 3);
+    background-color: burlywood;
+    margin-left: 280px;
+    margin-right: 300px;font-family: Georgia, 'Times New Roman', Times, serif;
+    
+  }
+  .btn{
+    background-color: red;
+    color: white;
+    font-size: x-large;
+    border-radius: 4px;
+    border: 2px burlywood groove;
+    font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+  }
+  .ne{
+    font-size: 14px;
+    font-style: italic;
+  }
